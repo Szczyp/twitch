@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE GADTs, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedStrings #-}
 
 module Main where
 
@@ -10,14 +10,18 @@ import Data.Time
 import Network.Wreq
 import Text.PrettyPrint.Boxes
 
-getStreams :: Text -> [Text] -> IO [(Text, Text, Text)]
+getStreams :: Text -> [Text] -> IO [(Text, Text, Text, Text, Text)]
 getStreams url channels = do
-  r <- get . unpack $ url ++ "?channel=" ++ intercalate "," channels
+  r <- get . unpack $ url ++ query
   return $ r ^.. responseBody . key "streams" . values
-    . to ((,,)
+    . to ((,,,,)
           <$> view (key "channel" . key "name" . _String)
           <*> view (key "created_at" . _String)
-          <*> view (key "viewers" . _Integer . to (pack . show)))
+          <*> view (key "viewers" . _Integer . toText)
+          <*> view (key "video_height" . _Integer . toText)
+          <*> view (key "average_fps" . _Number . to truncate . toText))
+  where query = "?stream_type=live&limit=100&channel=" ++ intercalate "," channels
+        toText = to $ pack . show
 
 duration :: UTCTime -> Text -> Text
 duration base time = fromMaybe "" $ do
@@ -26,14 +30,14 @@ duration base time = fromMaybe "" $ do
   where parse = parseTimeM False defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ"
         format (h, m) = show h ++ "h" ++ " " ++ show m ++ "m"
 
-printInfo :: [(Text, Text, Text)] -> IO ()
+printInfo :: [(Text, Text, Text, Text)] -> IO ()
 printInfo =
   printBox
   . hsep 2 left
   . map (vcat left)
   . transpose
   . map (^.. each . to (text . unpack))
-  . (("CHANNEL:", "DURATION:", "VIEWERS:") :)
+  . (("CHANNEL:", "DURATION:", "VIEWERS:", "VIDEO:") :)
 
 main :: IO ()
 main = do
@@ -42,4 +46,6 @@ main = do
   streams <- getStreams
     (config ^. key "api-root" . _String)
     (config ^.. key "channels" . values . _String)
-  printInfo $ streams & each . _2 %~ duration now
+  printInfo $ streams
+    & each . _2 %~ duration now
+    & each %~ \(x, y, z, height, fps) -> (x, y, z, height ++ "@" ++ fps)
