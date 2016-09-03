@@ -8,6 +8,7 @@ import Data.Aeson.Lens
 import Data.List              (transpose)
 import Data.Time
 import Network.Wreq
+import System.Directory
 import Text.PrettyPrint.Boxes
 
 getStreams :: Text -> [Text] -> IO [(Text, Text, Text, Text, Text, Text)]
@@ -42,7 +43,8 @@ printInfo =
 
 main :: IO ()
 main = do
-  config <- readFile "config.json" :: IO Text
+  dir <- getAppUserDataDirectory "twitch"
+  config <- readFile (dir </> "twitch.config") :: IO Text
   now <- getCurrentTime
   streams <- getStreams
     (config ^. key "api-root" . _String)

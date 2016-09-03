@@ -23,6 +23,7 @@ executable twitch
                      , base
                      , boxes
                      , classy-prelude
+                     , directory
                      , lens
                      , lens-aeson
                      , time
