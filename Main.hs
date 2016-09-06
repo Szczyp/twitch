@@ -9,6 +9,7 @@ import Data.List              (transpose)
 import Data.Time
 import Network.Wreq
 import System.Directory
+import System.IO              (hSetEncoding, utf8)
 import Text.PrettyPrint.Boxes
 
 getStreams :: Text -> [Text] -> IO [(Text, Text, Text, Text, Text, Text)]
@@ -43,6 +44,7 @@ printInfo =
 
 main :: IO ()
 main = do
+  mapM (flip hSetEncoding utf8) [stdout, stderr]
   dir <- getAppUserDataDirectory "twitch"
   config <- readFile (dir </> "twitch.config") :: IO Text
   now <- getCurrentTime
