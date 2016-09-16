@@ -1,9 +1,11 @@
-{-# LANGUAGE GADTs, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, GADTs, NamedFieldPuns, NoImplicitPrelude, NoMonomorphismRestriction,
+             OverloadedStrings #-}
 
 module Main where
 
 import ClassyPrelude
 import Control.Lens
+import Data.Aeson
 import Data.Aeson.Lens
 import Data.List              (transpose)
 import Data.Time
@@ -12,10 +14,17 @@ import System.Directory
 import System.IO              (hSetEncoding, utf8)
 import Text.PrettyPrint.Boxes
 
-getStreams :: Text -> Text -> [Text] -> IO [(Text, Text, Text, Text, Text, Text)]
-getStreams clientId url channels = do
+data Config = Config { apiRoot  :: Text
+                     , clientId :: Text
+                     , channels :: [Text]
+                     } deriving (Generic)
+
+instance FromJSON Config
+
+getStreams :: Config -> IO [(Text, Text, Text, Text, Text, Text)]
+getStreams Config {clientId, apiRoot, channels} = do
   let opts = defaults & header "Client-ID" .~ [encodeUtf8 clientId]
-  r <- getWith opts . unpack $ url ++ query
+  r <- getWith opts . unpack $ apiRoot ++ query
   return $ r ^.. responseBody . key "streams" . values
     . to ((,,,,,)
           <$> view (key "channel" . key "name" . _String)
@@ -45,14 +54,14 @@ printInfo =
 
 main :: IO ()
 main = do
-  mapM (flip hSetEncoding utf8) [stdout, stderr]
+  mapM_ (`hSetEncoding` utf8) [stdout, stderr]
   dir <- getAppUserDataDirectory "twitch"
-  config <- readFile (dir </> "twitch.config") :: IO Text
-  now <- getCurrentTime
-  streams <- getStreams
-    (config ^. key "client-id" . _String)
-    (config ^. key "api-root" . _String)
-    (config ^.. key "channels" . values . _String)
-  printInfo $ streams
-    & each . _2 %~ duration now
-    & each %~ \(n, c, v, height, fps, s) -> (n, c, v, height ++ "@" ++ fps, s)
+  configJson <- readFile (dir </> "twitch.config")
+  case decode configJson of
+    Nothing -> putStrLn "Can't parse config"
+    Just config -> do
+      streams <- getStreams config
+      now <- getCurrentTime
+      printInfo $ streams
+        & each . _2 %~ duration now
+        & each %~ \(n, c, v, height, fps, s) -> (n, c, v, height ++ "@" ++ fps, s)
