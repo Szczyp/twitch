@@ -12,9 +12,10 @@ import System.Directory
 import System.IO              (hSetEncoding, utf8)
 import Text.PrettyPrint.Boxes
 
-getStreams :: Text -> [Text] -> IO [(Text, Text, Text, Text, Text, Text)]
-getStreams url channels = do
-  r <- get . unpack $ url ++ query
+getStreams :: Text -> Text -> [Text] -> IO [(Text, Text, Text, Text, Text, Text)]
+getStreams clientId url channels = do
+  let opts = defaults & header "Client-ID" .~ [encodeUtf8 clientId]
+  r <- getWith opts . unpack $ url ++ query
   return $ r ^.. responseBody . key "streams" . values
     . to ((,,,,,)
           <$> view (key "channel" . key "name" . _String)
@@ -49,6 +50,7 @@ main = do
   config <- readFile (dir </> "twitch.config") :: IO Text
   now <- getCurrentTime
   streams <- getStreams
+    (config ^. key "client-id" . _String)
     (config ^. key "api-root" . _String)
     (config ^.. key "channels" . values . _String)
   printInfo $ streams
