@@ -52,6 +52,9 @@ printInfo =
   . map (^.. each . to (text . unpack))
   . (("CHANNEL:", "DURATION:", "VIEWERS:", "VIDEO:", "STATUS:") :)
 
+trimStatus :: (IsSequence t, IsString t) => t -> t
+trimStatus s = let s' = take 80 s in if length s' == 80 then s' ++ "..." else s
+
 main :: IO ()
 main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
@@ -64,4 +67,5 @@ main = do
       now <- getCurrentTime
       printInfo $ streams
         & each . _2 %~ duration now
+        & each . _6 %~ trimStatus
         & each %~ \(n, c, v, height, fps, s) -> (n, c, v, height ++ "@" ++ fps, s)
