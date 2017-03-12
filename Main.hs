@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveGeneric, GADTs, NamedFieldPuns, NoImplicitPrelude, NoMonomorphismRestriction,
-             OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, GADTs, NamedFieldPuns, NoImplicitPrelude,
+             NoMonomorphismRestriction, OverloadedStrings #-}
 
 module Main where
 
@@ -53,14 +53,14 @@ printInfo =
   . (("CHANNEL:", "DURATION:", "VIEWERS:", "VIDEO:", "STATUS:") :)
 
 trimStatus :: (IsSequence t, IsString t) => t -> t
-trimStatus s = let s' = take 80 s in if length s' == 80 then s' ++ "..." else s
+trimStatus s = let s' = take 80 s in if length s' > 80 then s' ++ "..." else s
 
 main :: IO ()
 main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
   dir <- getAppUserDataDirectory "twitch"
   configJson <- readFile (dir </> "twitch.config")
-  case decode configJson of
+  case decodeStrict configJson of
     Nothing -> putStrLn "Can't parse config"
     Just config -> do
       streams <- getStreams config
