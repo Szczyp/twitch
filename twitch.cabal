@@ -26,6 +26,7 @@ executable twitch
                      , directory
                      , lens
                      , lens-aeson
+                     , MissingH
                      , time
                      , wreq
   -- hs-source-dirs:      
