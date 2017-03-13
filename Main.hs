@@ -31,14 +31,9 @@ getStreams Config {clientId, apiRoot, channels} = do
           <*> view (key "video_height" . _Integer . toText)
           <*> view (key "average_fps" . _Number . to truncate . toText)
           <*> view (key "channel" . key "status" . _String))
-  where query = "?stream_type=live&limit=100&channel=" ++ intercalate "," channels
-        toText = to $ pack . show
-
-duration base time = fromMaybe "" $ do
-  t <- parse . unpack $ time
-  return . pack . format . quotRem (truncate $ diffUTCTime base t / 60) $ 60
-  where parse = parseTimeM False defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ"
-        format (h, m) = show h ++ "h" ++ " " ++ show m ++ "m"
+  where
+    query = "?stream_type=live&limit=100&channel=" ++ intercalate "," channels
+    toText = to $ pack . show
 
 printInfo streams = do
   now <- getCurrentTime
@@ -52,8 +47,13 @@ printInfo streams = do
     & map (vcat left)
     & hsep 2 left
     & printBox
-
-trimStatus s = let s' = take 80 s in if length s > 80 then s' ++ "..." else s
+  where
+    trimStatus s = let s' = take 60 s in if length s > 80 then s' ++ "..." else s
+    duration base time = fromMaybe "" $ do
+      t <- parse . unpack $ time
+      return . pack . format . quotRem (truncate $ diffUTCTime base t / 60) $ 60
+      where parse = parseTimeM False defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ"
+            format (h, m) = show h ++ "h" ++ " " ++ show m ++ "m"
 
 main :: IO ()
 main = do
