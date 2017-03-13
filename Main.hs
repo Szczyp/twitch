@@ -4,13 +4,12 @@
 module Main where
 
 import ClassyPrelude
-import Control.Category
 import Control.Lens
-import Data.Aeson
 import Data.Aeson.Lens
 import Data.Either.Utils
 import Data.List              (transpose)
 import Data.Time
+import Data.Yaml
 import Network.Wreq
 import System.Directory
 import System.IO              (hSetEncoding, utf8)
@@ -54,13 +53,13 @@ printInfo streams = do
     & hsep 2 left
     & printBox
 
-trimStatus s = let s' = take 80 s in if length s' > 80 then s' ++ "..." else s
+trimStatus s = let s' = take 80 s in if length s > 80 then s' ++ "..." else s
 
 main :: IO ()
 main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
   getAppUserDataDirectory "twitch"
     <&> (</> "twitch.config")
-    >>= readFile
-    >>= (eitherDecodeStrict >>> forceEither >>> getStreams)
+    >>= decodeFileEither
+    >>= getStreams . forceEither
     >>= printInfo
