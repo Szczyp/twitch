@@ -55,7 +55,6 @@ printInfo streams = do
       where parse = parseTimeM False defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ"
             format (h, m) = show h ++ "h" ++ " " ++ show m ++ "m"
 
-main :: IO ()
 main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
   getAppUserDataDirectory "twitch"
