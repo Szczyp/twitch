@@ -21,11 +21,13 @@ executable twitch
   -- other-extensions:    
   build-depends:     base  
                    , MissingH
+                   , aeson
                    , boxes
                    , classy-prelude
                    , directory
                    , lens
                    , lens-aeson
+                   , optparse-applicative
                    , time
                    , wreq
                    , yaml

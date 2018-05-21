@@ -4,13 +4,14 @@ let
   drv = pkgs.haskell.packages."${ghc}".callPackage ./. {};
 
   tools = with pkgs.haskell.packages."${ghc}"; [
-    cabal-install
-    hlint
     apply-refact
-    hindent
-    hasktags
-    hoogle
+    cabal-install
     cabal2nix
+    hasktags
+    hindent
+    hlint
+    hoogle
+    stylish-haskell
   ];
 
 in
