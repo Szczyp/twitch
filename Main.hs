@@ -57,22 +57,24 @@ printJSON =
              , "video"
              , "status" ]
 
-printInfo =
+printInfo skipHeader =
   printBox
   . hsep 2 left
   . map (vcat left)
   . transpose
   . map (^.. each . to (text . unpack))
-  . (("CHANNEL:", "DURATION:", "VIEWERS:", "VIDEO:", "STATUS:") :)
+  . (if skipHeader then id else (("CHANNEL:", "DURATION:", "VIEWERS:", "VIDEO:", "STATUS:") :))
 
 main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
-  json <- execParser
-          $ info
-          (switch (long "json" ++ help "print as JSON") <**> helper)
-          (progDesc "Print live twitch streams")
+  (json, skipHeader) <- execParser $ info (options <**> helper)
+                        (progDesc "Print live twitch streams")
   getAppUserDataDirectory "twitch"
     <&> (</> "twitch.config")
     >>= decodeFileEither
     >>= getStreams . forceEither
-    >>= if json then printJSON else printInfo
+    >>= if json then printJSON else printInfo skipHeader
+  where
+    options = (,)
+              <$> (switch (long "json" ++ help "print as JSON"))
+              <*> (switch (long "skip-header" ++ help "skip header in default output"))
