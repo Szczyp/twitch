@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, ghc ? "ghc863" }:
+{ pkgs ? import <nixpkgs> {}, ghc ? "ghc865" }:
 
 let
   drv = pkgs.haskell.packages."${ghc}".callPackage ./. {};

@@ -28,19 +28,14 @@ getStreams Config {clientId, apiRoot, channels} = do
   let opts = defaults & header "Client-ID" .~ [encodeUtf8 clientId]
   r <- getWith opts . unpack $ apiRoot ++ query
   now <- getCurrentTime
-  return $ r ^.. responseBody . key "streams" . values
-    . to ((,,,,)
-          <$> view (key "channel" . key "name" . _String)
-          <*> view (key "created_at" . _String . to (duration now))
-          <*> view (key "viewers" . _Integer . to (pack . show))
-          <*> (pack . concatOf each
-               . ((,,)
-                  <$> view (key "video_height" . _Integer . to show)
-                  <*> const "@"
-                  <*> view (key "average_fps" . _Number . to (show . truncate))))
-          <*> view (key "channel" . key "status" . _String))
+  return $ r ^.. responseBody . key "data" . values
+    . to ((,,,)
+          <$> view (key "user_name" . _String)
+          <*> view (key "started_at" . _String . to (duration now))
+          <*> view (key "viewer_count" . _Integer . to (pack . show))
+          <*> view (key "title" . _String))
   where
-    query = "?stream_type=live&limit=100&channel=" ++ intercalate "," channels
+    query = "?first=100" ++ concatMap ("&user_login=" ++) channels
     duration base time = fromMaybe "" $ do
       t <- parse . unpack $ time
       return . pack . format . quotRem (truncate $ diffUTCTime base t / 60) $ 60
@@ -54,8 +49,7 @@ printJSON =
     labels = [ "channel"
              , "duration"
              , "viewers"
-             , "video"
-             , "status" ]
+             , "title" ]
 
 printInfo skipHeader =
   printBox
@@ -63,7 +57,7 @@ printInfo skipHeader =
   . map (vcat left)
   . transpose
   . map (^.. each . to (text . unpack))
-  . (if skipHeader then id else (("CHANNEL:", "DURATION:", "VIEWERS:", "VIDEO:", "STATUS:") :))
+  . (if skipHeader then id else (("CHANNEL:", "DURATION:", "VIEWERS:", "TITLE:") :))
 
 main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
@@ -76,5 +70,5 @@ main = do
     >>= if json then printJSON else printInfo skipHeader
   where
     options = (,)
-              <$> (switch (long "json" ++ help "print as JSON"))
-              <*> (switch (long "skip-header" ++ help "skip header in default output"))
+              <$> switch (long "json" ++ help "print as JSON")
+              <*> switch (long "skip-header" ++ help "skip header in default output")
