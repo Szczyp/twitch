@@ -1,24 +1,14 @@
-{ pkgs ? import <nixpkgs> {}, ghc ? "ghc865" }:
-
-let
-  drv = pkgs.haskell.packages."${ghc}".callPackage ./. {};
-
-  tools = with pkgs.haskell.packages."${ghc}"; [
-    apply-refact
+{ pkgs ? import <nixpkgs> {} }:
+with pkgs.haskellPackages;
+(callPackage ./. {}).env.overrideAttrs(old: {
+  buildInputs = old.buildInputs ++ [
     cabal-install
     cabal2nix
-    hasktags
+    apply-refact
     hindent
     hlint
-    hoogle
     stylish-haskell
+    hasktags
+    hoogle
   ];
-
-in
-  pkgs.stdenv.mkDerivation {
-    name = "devEnv";
-    buildInputs = tools ++ drv.env.buildInputs;
-    nativeBuildInputs = drv.env.nativeBuildInputs;
-  }
-
-
+})

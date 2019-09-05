@@ -1,24 +1,3 @@
-{ mkDerivation, base, boxes, classy-prelude, directory, lens
-, lens-aeson, MissingH, optparse-applicative, stdenv, time, wreq, yaml
-}:
-mkDerivation {
-  pname = "twitch";
-  version = "0.1.3.0";
-  src = ./.;
-  isLibrary = false;
-  isExecutable = true;
-  executableHaskellDepends = [
-    base
-    boxes
-    classy-prelude
-    directory
-    lens
-    lens-aeson
-    MissingH
-    optparse-applicative
-    time
-    wreq
-    yaml
-  ];
-  license = stdenv.lib.licenses.gpl3;
-}
+{ pkgs ? import <nixpkgs> {} }:
+with pkgs;
+haskellPackages.callCabal2nix "twitch" (nix-gitignore.gitignoreSource [] ./.) {}
