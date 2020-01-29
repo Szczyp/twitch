@@ -3,3 +3,4 @@
 /.stack-work
 /.ghc.environment.x86_64-linux-8.6.3
 /dist-newstyle
+/.envrc
