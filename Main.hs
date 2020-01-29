@@ -19,10 +19,11 @@ import System.Directory
 import System.IO              (hSetEncoding, utf8)
 import Text.PrettyPrint.Boxes
 
-data Config = Config { apiRoot  :: Text
-                     , clientId :: Text
-                     , channels :: [Text]
-                     } deriving (Generic, FromJSON)
+data Config =
+  Config { apiRoot  :: Text
+         , clientId :: Text
+         , channels :: [Text]
+         } deriving (Generic, FromJSON)
 
 getStreams Config {clientId, apiRoot, channels} = do
   let opts = defaults & header "Client-ID" .~ [encodeUtf8 clientId]
@@ -57,18 +58,29 @@ printInfo skipHeader =
   . map (vcat left)
   . transpose
   . map (^.. each . to (text . unpack))
-  . (if skipHeader then id else (("CHANNEL:", "DURATION:", "VIEWERS:", "TITLE:") :))
+  . header
+  where
+    header =
+      case skipHeader of
+        True  -> id
+        False -> (("CHANNEL:", "DURATION:", "VIEWERS:", "TITLE:") :)
 
 main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
   (json, skipHeader) <- execParser $ info (options <**> helper)
                         (progDesc "Print live twitch streams")
-  getAppUserDataDirectory "twitch"
-    <&> (</> "twitch.config")
-    >>= decodeFileEither
-    >>= getStreams . forceEither
-    >>= if json then printJSON else printInfo skipHeader
+  config
+    >>= getStreams
+    >>= case json of
+          True  -> printJSON
+          False -> printInfo skipHeader
   where
-    options = (,)
-              <$> switch (long "json" ++ help "print as JSON")
-              <*> switch (long "skip-header" ++ help "skip header in default output")
+    options =
+      (,)
+      <$> switch (long "json" ++ help "print as JSON")
+      <*> switch (long "skip-header" ++ help "skip header in default output")
+    config =
+      getAppUserDataDirectory "twitch"
+      <&> (</> "twitch.config")
+      >>= decodeFileEither
+      <&> forceEither
