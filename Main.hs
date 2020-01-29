@@ -30,7 +30,7 @@ getStreams Config {clientId, apiRoot, channels} = do
   now <- getCurrentTime
   return $ r ^.. responseBody . key "data" . values
     . to ((,,,)
-          <$> view (key "user_name" . _String)
+          <$> view (key "user_name" . _String . to (filter (/= ' ')))
           <*> view (key "started_at" . _String . to (duration now))
           <*> view (key "viewer_count" . _Integer . to (pack . show))
           <*> view (key "title" . _String))
