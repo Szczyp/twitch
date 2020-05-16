@@ -20,13 +20,15 @@ import System.IO              (hSetEncoding, utf8)
 import Text.PrettyPrint.Boxes
 
 data Config =
-  Config { apiRoot  :: Text
-         , clientId :: Text
-         , channels :: [Text]
+  Config { apiRoot   :: Text
+         , clientId  :: Text
+         , authToken :: Text
+         , channels  :: [Text]
          } deriving (Generic, FromJSON)
 
-getStreams Config {clientId, apiRoot, channels} = do
+getStreams Config {clientId, authToken, apiRoot, channels} = do
   let opts = defaults & header "Client-ID" .~ [encodeUtf8 clientId]
+                      & header "Authorization" .~ [encodeUtf8 $ "Bearer " ++ authToken]
   r <- getWith opts . unpack $ apiRoot ++ query
   now <- getCurrentTime
   return $ r ^.. responseBody . key "data" . values
